@@ -347,16 +347,38 @@ button:focus-visible,
   border: 1px solid rgba(99, 102, 241, 0.35);
 }
 
-.academic-badge {
+.system-status-indicator {
   display: inline-flex;
   align-items: center;
-  gap: 0.4rem;
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid var(--border-subtle);
-  padding: 0.3rem 0.75rem;
+  gap: 0.5rem;
+  background: rgba(16, 185, 129, 0.08);
+  border: 1px solid rgba(16, 185, 129, 0.25);
+  padding: 0.35rem 0.85rem;
   border-radius: var(--radius-full);
-  font-size: 0.75rem;
-  color: var(--text-muted);
+  font-size: 0.775rem;
+  font-weight: 600;
+  color: #34d399;
+}
+
+.status-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background-color: #10b981;
+  box-shadow: 0 0 8px #10b981;
+  display: inline-block;
+  animation: pulse-glow 2s infinite ease-in-out;
+}
+
+@keyframes pulse-glow {
+  0%, 100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.5;
+    transform: scale(0.85);
+  }
 }
 
 /* Service Catalogue Grid */
@@ -605,7 +627,7 @@ button:focus-visible,
     padding: 0.45rem 0.65rem;
     font-size: 0.825rem;
   }
-  .academic-badge {
+  .system-status-indicator {
     display: none;
   }
   .hero-title {

@@ -1,7 +1,7 @@
 import React from 'react';
 
 /**
- * Top Navigation Bar with View Switcher and Academic Evaluation Context
+ * Top Navigation Bar with View Switcher and Live System Status
  */
 export default function Navbar({ activeView, onViewChange }) {
   return (
@@ -61,9 +61,10 @@ export default function Navbar({ activeView, onViewChange }) {
           </button>
         </nav>
 
-        {/* Academic Context Badge */}
-        <div className="academic-badge" title="End Semester Examination Prototype">
-          <span>CSE (AI/ML) · Sem 3</span>
+        {/* Live System Status Indicator */}
+        <div className="system-status-indicator" title="All queue services active and synchronized">
+          <span className="status-dot"></span>
+          <span>System Online</span>
         </div>
       </div>
     </header>

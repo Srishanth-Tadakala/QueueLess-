@@ -3,12 +3,6 @@ import Badge from '../components/Badge.jsx';
 
 /**
  * TrackerPage: Customer Live Digital Ticket & Queue Position Tracker
- * Phase 4B: Live state synchronization reflecting dispatch actions:
- * - WAITING: Queue position (#P in line), waiting ahead count, Stage A baseline wait.
- * - SERVING: Vibrant green Now Serving state, suppressed waiting metrics.
- * - COMPLETED: Service completion banner, suppressed active waiting metrics.
- * - SKIPPED: Skipped/absent notice, counter re-queue guidance, suppressed waiting metrics.
- * - CANCELLED: Cancellation acknowledgment, option to browse services.
  */
 export default function TrackerPage({
   activeToken,
@@ -36,7 +30,7 @@ export default function TrackerPage({
           <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>🎫</div>
           <h3 style={{ fontSize: '1.25rem', marginBottom: '0.5rem' }}>No Active Queue Ticket</h3>
           <p style={{ fontSize: '0.9rem', color: 'var(--text-muted)', maxWidth: '420px', margin: '0 auto 1.75rem' }}>
-            You do not currently hold an active queue ticket in this browser session. Select an academic service desk to join a virtual line.
+            You do not currently hold an active queue ticket in this browser session. Select a service desk to join the line.
           </p>
           <button 
             type="button" 
@@ -59,8 +53,7 @@ export default function TrackerPage({
 
   const formattedCreatedAt = new Date(displayToken.createdAt).toLocaleTimeString([], {
     hour: '2-digit',
-    minute: '2-digit',
-    second: '2-digit'
+    minute: '2-digit'
   });
 
   const handleCancelClick = () => {
@@ -92,14 +85,14 @@ export default function TrackerPage({
         <h2>Live Ticket Tracker</h2>
         <p style={{ fontSize: '0.925rem', color: 'var(--text-secondary)' }}>
           {isServing
-            ? 'Your ticket has been called! Proceed to the counter.'
+            ? 'Your ticket is now called. Please proceed directly to the counter.'
             : isCompleted
             ? 'Your service session has concluded.'
             : isSkipped
-            ? 'Your ticket was skipped due to customer absence.'
+            ? 'Your ticket was skipped. Please contact counter staff.'
             : isCancelled
-            ? 'This ticket was cancelled.'
-            : 'Monitor your exact queue position and baseline estimated wait time.'}
+            ? 'This ticket has been cancelled.'
+            : 'Track your queue position and live estimated wait time in real time.'}
         </p>
       </div>
 
@@ -116,7 +109,7 @@ export default function TrackerPage({
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem', borderBottom: '1px dashed var(--border-medium)', paddingBottom: '1.25rem' }}>
           <div>
             <span style={{ fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--text-muted)' }}>
-              Your Digital Ticket
+              Your Ticket Number
             </span>
             <div className="mono" style={{ fontSize: '2.5rem', fontWeight: '800', color: '#ffffff', letterSpacing: '-0.02em' }}>
               {displayToken.tokenNumber}
@@ -131,7 +124,7 @@ export default function TrackerPage({
           <div>
             {isWaiting && (
               <Badge variant="waiting">
-                {activeMetrics?.isNextInLine ? 'Next in Line' : 'Waiting in Line'}
+                {activeMetrics?.isNextInLine ? 'Next in Line' : 'In Queue'}
               </Badge>
             )}
             {isServing && <Badge variant="serving">Now Serving</Badge>}
@@ -142,7 +135,7 @@ export default function TrackerPage({
             )}
             {isSkipped && (
               <Badge variant="waiting" style={{ background: 'rgba(245, 158, 11, 0.2)', color: '#fbbf24', border: '1px solid #f59e0b' }}>
-                ⚠️ Skipped / Absent
+                Skipped
               </Badge>
             )}
             {isCancelled && (
@@ -187,9 +180,9 @@ export default function TrackerPage({
             <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
               {isWaiting && `${activeMetrics?.waitingAhead ?? 0} ${activeMetrics?.waitingAhead === 1 ? 'person' : 'people'} ahead of you`}
               {isServing && 'Please proceed to counter'}
-              {isCompleted && `Finished at ${new Date(displayToken.completedAt || Date.now()).toLocaleTimeString()}`}
-              {isSkipped && `Marked absent at ${new Date(displayToken.skippedAt || Date.now()).toLocaleTimeString()}`}
-              {isCancelled && 'Ticket revoked'}
+              {isCompleted && `Finished at ${new Date(displayToken.completedAt || Date.now()).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`}
+              {isSkipped && 'Absent when called'}
+              {isCancelled && 'Revoked by user'}
             </span>
           </div>
         </div>
@@ -216,40 +209,20 @@ export default function TrackerPage({
               {activeMetrics?.statusWording || 'Registered in queue'}
             </p>
 
-            {/* Stage B Estimation Disclosure & Sample Metadata */}
             <div 
               style={{ 
                 marginTop: '0.85rem', 
                 paddingTop: '0.75rem', 
                 borderTop: '1px dashed rgba(99, 102, 241, 0.2)', 
-                fontSize: '0.825rem',
-                color: 'var(--text-secondary)'
+                fontSize: '0.8rem',
+                color: 'var(--text-muted)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '0.4rem'
               }}
             >
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem', flexWrap: 'wrap', marginBottom: '0.25rem' }}>
-                <span 
-                  className="mono" 
-                  style={{ 
-                    color: activeMetrics?.isUsingFallback ? '#fbbf24' : '#34d399', 
-                    fontWeight: '700',
-                    fontSize: '0.8rem'
-                  }}
-                >
-                  {activeMetrics?.isUsingFallback
-                    ? '• Method: Standard Baseline Duration'
-                    : `• Method: Adaptive Rolling Average (${activeMetrics?.sampleCount || 0} / 5 completed samples)`}
-                </span>
-                {!activeMetrics?.isUsingFallback && activeMetrics?.rollingAverageMinutes !== null && (
-                  <span style={{ color: '#a5b4fc', fontSize: '0.775rem' }}>
-                    (Recent avg: ~{activeMetrics.rollingAverageMinutes} min)
-                  </span>
-                )}
-              </div>
-              <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', margin: '0.25rem 0 0', fontStyle: 'italic' }}>
-                {activeMetrics?.isUsingFallback
-                  ? `Using standard service duration (${activeMetrics?.baselineDuration || 5} min baseline). Historical data: Not available. Estimated wait before counter call, not a completion guarantee.`
-                  : `Based on recent completed transactions. Historical samples: ${activeMetrics?.sampleCount || 0}. Statistical arithmetic mean; actual service times may vary.`}
-              </p>
+              <span>⏱ Live wait estimation calibrated by counter pace</span>
             </div>
           </div>
         )}
@@ -266,16 +239,16 @@ export default function TrackerPage({
             }}
           >
             <span style={{ fontSize: '0.75rem', textTransform: 'uppercase', color: '#34d399', letterSpacing: '0.05em', fontWeight: '700' }}>
-              Active Counter Call
+              Your Turn
             </span>
             <div className="mono" style={{ fontSize: '2rem', fontWeight: '800', color: '#34d399', margin: '0.35rem 0' }}>
-              At the Counter
+              Now Serving
             </div>
             <p style={{ fontSize: '0.925rem', color: '#a7f3d0', fontWeight: '600' }}>
-              Now Serving — Please proceed immediately to {displayToken.serviceName}
+              Please proceed immediately to {displayToken.serviceName}
             </p>
             <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '0.5rem' }}>
-              Called at {new Date(displayToken.calledAt || Date.now()).toLocaleTimeString()}
+              Called at {new Date(displayToken.calledAt || Date.now()).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
             </div>
           </div>
         )}
@@ -296,11 +269,8 @@ export default function TrackerPage({
               Service Completed
             </div>
             <p style={{ fontSize: '0.875rem', color: '#a7f3d0' }}>
-              Your transaction for {displayToken.serviceName} has successfully concluded.
+              Your transaction for {displayToken.serviceName} has concluded. Thank you for using QueueLess.
             </p>
-            <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '0.5rem' }}>
-              Active wait estimates have ceased. Thank you for using QueueLess.
-            </div>
           </div>
         )}
 
@@ -317,13 +287,13 @@ export default function TrackerPage({
           >
             <div style={{ fontSize: '2rem', marginBottom: '0.35rem' }}>⚠️</div>
             <div className="mono" style={{ fontSize: '1.4rem', fontWeight: '700', color: '#fbbf24', marginBottom: '0.25rem' }}>
-              Customer Skipped / Absent
+              Customer Skipped
             </div>
             <p style={{ fontSize: '0.875rem', color: '#fde68a' }}>
-              Your number was called at the counter, but you were marked absent.
+              Your ticket was called, but you were marked absent.
             </p>
             <div style={{ fontSize: '0.8rem', color: '#d1d5db', marginTop: '0.5rem' }}>
-              If you have arrived, please speak to staff at the counter to request a re-queue to the tail of the line.
+              If you have arrived, please speak to staff at the counter to be re-queued.
             </div>
           </div>
         )}
@@ -344,7 +314,7 @@ export default function TrackerPage({
               Ticket Cancelled
             </div>
             <p style={{ fontSize: '0.875rem', color: '#fca5a5' }}>
-              This ticket was cancelled and will not be called to the counter.
+              This ticket has been cancelled.
             </p>
           </div>
         )}
@@ -355,7 +325,7 @@ export default function TrackerPage({
             confirmCancel ? (
               <div style={{ background: 'rgba(239, 68, 68, 0.12)', border: '1px solid rgba(239, 68, 68, 0.3)', borderRadius: 'var(--radius-md)', padding: '1rem', textAlign: 'center' }}>
                 <p style={{ fontSize: '0.85rem', color: '#fca5a5', marginBottom: '0.75rem' }}>
-                  Are you sure you want to cancel ticket <strong>{displayToken.tokenNumber}</strong>? You will lose your spot in line.
+                  Cancel ticket <strong>{displayToken.tokenNumber}</strong>? You will lose your current spot in line.
                 </p>
                 <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'center' }}>
                   <button 
@@ -383,7 +353,7 @@ export default function TrackerPage({
                 style={{ color: '#f87171', borderColor: 'rgba(239, 68, 68, 0.35)' }}
                 onClick={handleCancelClick}
               >
-                Cancel This Ticket
+                Cancel Ticket
               </button>
             )
           )}
@@ -394,7 +364,7 @@ export default function TrackerPage({
               className="btn btn-primary" 
               onClick={handleDismissAndHome}
             >
-              Done / Join Another Queue
+              Done / Return to Services
             </button>
           ) : (
             <button 

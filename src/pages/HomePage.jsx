@@ -22,7 +22,7 @@ export default function HomePage({
     setIssuanceError(null);
     if (activeToken) {
       setIssuanceError(
-        `Active Ticket Held: You already have token ${activeToken.tokenNumber} in ${activeToken.status} status. You cannot issue another token until this service is completed or cancelled.`
+        `Active Ticket Held: You already hold ticket ${activeToken.tokenNumber} for ${activeToken.serviceName}. You cannot request another ticket until your current session is completed or cancelled.`
       );
       return;
     }
@@ -70,10 +70,10 @@ export default function HomePage({
           <div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.25rem' }}>
               <Badge variant="waiting">{activeToken.status}</Badge>
-              <strong style={{ color: '#ffffff' }}>Active Queue Ticket: {activeToken.tokenNumber}</strong>
+              <strong style={{ color: '#ffffff' }}>Active Ticket: {activeToken.tokenNumber}</strong>
             </div>
             <p style={{ fontSize: '0.875rem', color: '#c7d2fe', margin: 0 }}>
-              You are currently registered for <strong>{activeToken.serviceName}</strong>. You cannot request another token in this session.
+              You are currently registered for <strong>{activeToken.serviceName}</strong>. You can follow your queue status in real time.
             </p>
           </div>
           <button 
@@ -115,13 +115,14 @@ export default function HomePage({
       {/* Hero Section */}
       <section className="hero-section">
         <div className="hero-pill">
-          <span>⚡ Phase 3.2: Customer Token Issuance</span>
+          <span className="status-dot"></span>
+          <span>Real-Time Virtual Queuing</span>
         </div>
         <h1 className="hero-title">
           Skip Physical Lines with <span>QueueLess</span>
         </h1>
         <p className="hero-subtitle">
-          Select an academic service desk, receive a virtual sequential token, and monitor your exact queue position and estimated wait time in real-time.
+          Select a service desk, receive your digital queue ticket, and monitor your live position and estimated wait time from anywhere.
         </p>
       </section>
 
@@ -131,11 +132,11 @@ export default function HomePage({
           <div>
             <h2 id="services-heading">Available Service Desks</h2>
             <p style={{ fontSize: '0.9rem', color: 'var(--text-muted)' }}>
-              Choose a counter to view queue progress and request a digital ticket.
+              Choose a counter to view live queue progress and join the line.
             </p>
           </div>
           <span className="mono" style={{ fontSize: '0.8rem', color: 'var(--text-muted)', background: 'var(--bg-tertiary)', padding: '0.35rem 0.75rem', borderRadius: 'var(--radius-sm)' }}>
-            3 Counters Active
+            3 Counters Online
           </span>
         </div>
 
@@ -191,7 +192,7 @@ export default function HomePage({
               <div>
                 <Badge variant="prefix">{selectedService.prefix}</Badge>
                 <h3 id="modal-request-token-title" style={{ fontSize: '1.35rem', marginTop: '0.35rem' }}>
-                  Request Queue Token
+                  Join Virtual Queue
                 </h3>
                 <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>
                   {selectedService.name} • {selectedService.counterNumber}
@@ -200,7 +201,7 @@ export default function HomePage({
               <button 
                 type="button"
                 onClick={() => setSelectedService(null)}
-                aria-label="Close modal dialog"
+                aria-label="Close dialog"
                 style={{ background: 'transparent', border: 'none', color: 'var(--text-muted)', fontSize: '1.25rem', cursor: 'pointer' }}
               >
                 ✕
@@ -209,14 +210,14 @@ export default function HomePage({
 
             {issuanceError && (
               <div style={{ background: 'rgba(239, 68, 68, 0.15)', border: '1px solid rgba(239, 68, 68, 0.3)', borderRadius: 'var(--radius-sm)', padding: '0.75rem', marginBottom: '1rem', color: '#fca5a5', fontSize: '0.85rem' }}>
-                🛑 {issuanceError}
+                ⚠️ {issuanceError}
               </div>
             )}
 
             <form onSubmit={handleConfirmIssuance}>
               <div style={{ background: 'var(--bg-glass)', borderRadius: 'var(--radius-md)', padding: '1rem', border: '1px solid var(--border-subtle)', marginBottom: '1.25rem' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem', marginBottom: '0.5rem' }}>
-                  <span style={{ color: 'var(--text-muted)' }}>Expected Token Sequence:</span>
+                  <span style={{ color: 'var(--text-muted)' }}>Next Token:</span>
                   <span className="mono" style={{ color: 'var(--primary)', fontWeight: '700' }}>
                     {formatTokenNumber(
                       selectedService.prefix,
@@ -225,9 +226,9 @@ export default function HomePage({
                   </span>
                 </div>
                 <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem' }}>
-                  <span style={{ color: 'var(--text-muted)' }}>Baseline Wait Estimate:</span>
+                  <span style={{ color: 'var(--text-muted)' }}>Est. Service Duration:</span>
                   <span className="mono" style={{ color: 'var(--accent-cyan)' }}>
-                    {selectedService.baselineDurationMinutes} minutes
+                    ~{selectedService.baselineDurationMinutes} min
                   </span>
                 </div>
               </div>
@@ -237,12 +238,12 @@ export default function HomePage({
                   htmlFor="customer-name-input"
                   style={{ display: 'block', fontSize: '0.85rem', fontWeight: '600', marginBottom: '0.35rem', color: 'var(--text-secondary)' }}
                 >
-                  Your Name or Student ID (Optional)
+                  Your Name (Optional)
                 </label>
                 <input
                   id="customer-name-input"
                   type="text"
-                  placeholder="e.g. Alex M. or 22CS045"
+                  placeholder="e.g. Alex M."
                   maxLength={80}
                   value={customerName}
                   onChange={(e) => setCustomerName(e.target.value)}
@@ -274,7 +275,7 @@ export default function HomePage({
                   style={{ flex: 1 }}
                   disabled={isSubmitting}
                 >
-                  {isSubmitting ? 'Issuing...' : 'Confirm & Get Token'}
+                  {isSubmitting ? 'Joining...' : 'Get Digital Ticket'}
                 </button>
               </div>
             </form>
@@ -286,7 +287,7 @@ export default function HomePage({
       <section className="workflow-section">
         <h2>How QueueLess Works</h2>
         <p style={{ fontSize: '0.925rem', color: 'var(--text-secondary)' }}>
-          A clean, four-step digital workflow replacing physical line standing.
+          A simple four-step process to wait from anywhere.
         </p>
 
         <div className="workflow-grid">
@@ -297,21 +298,21 @@ export default function HomePage({
           </div>
 
           <div className="workflow-card">
-            <div className="workflow-num">02 / TOKEN</div>
-            <h4>Get Digital Token</h4>
-            <p>Receive a sequential ticket starting at 001 without requiring account registration.</p>
+            <div className="workflow-num">02 / TICKET</div>
+            <h4>Get Digital Ticket</h4>
+            <p>Receive your unique sequential token instantly on your device without registration.</p>
           </div>
 
           <div className="workflow-card">
             <div className="workflow-num">03 / TRACK</div>
             <h4>Monitor Wait Time</h4>
-            <p>Follow your position and adaptive countdown from your phone anywhere on campus.</p>
+            <p>Follow your live line position and estimated wait time countdown in real time.</p>
           </div>
 
           <div className="workflow-card">
             <div className="workflow-num">04 / SERVE</div>
             <h4>Proceed to Counter</h4>
-            <p>Approach the desk immediately when your status transitions to Now Serving.</p>
+            <p>Approach the desk promptly when your ticket status transitions to Now Serving.</p>
           </div>
         </div>
       </section>

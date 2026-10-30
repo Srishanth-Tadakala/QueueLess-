@@ -7,7 +7,6 @@ import { useQueue } from './hooks/useQueue.js';
 
 /**
  * QueueLess Application Shell
- * Phase 3.2: Real Customer Token Issuance & Active-Token Session Enforcement
  */
 export default function App() {
   const [activeView, setActiveView] = useState(() => {
@@ -38,7 +37,6 @@ export default function App() {
   }, []);
 
   const handleIssueTokenSuccess = (token) => {
-    // Navigate immediately to ticket tracker upon successful token creation
     setActiveView('tracker');
   };
 
@@ -141,14 +139,16 @@ export default function App() {
       <footer className="footer">
         <div className="footer-container">
           <div>
-            <strong style={{ color: 'var(--text-primary)' }}>QueueLess</strong> — Smart Queue Management Prototype
-            <div style={{ fontSize: '0.8rem', marginTop: '0.2rem' }}>
-              Academic Submission for Semester 3 CSE (AI/ML) End Semester Examination
+            <strong style={{ color: 'var(--text-primary)' }}>QueueLess</strong> — Smart Real-Time Queue Management
+            <div style={{ fontSize: '0.8rem', marginTop: '0.2rem', color: 'var(--text-muted)' }}>
+              Live Virtual Queuing & Adaptive Wait-Time Estimation
             </div>
           </div>
           <div style={{ textAlign: 'right' }}>
-            <span className="mono" style={{ fontSize: '0.8rem' }}>Phase 5B: Stage B Adaptive Wait Estimation (M ≤ 5 Rolling Avg) Active</span>
-            <div style={{ fontSize: '0.8rem' }}>Client-Side LocalStorage Persistence</div>
+            <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
+              © {new Date().getFullYear()} QueueLess • Real-Time Synchronization
+            </span>
+            <div style={{ fontSize: '0.775rem', color: 'var(--text-muted)' }}>All Systems Operational</div>
           </div>
         </div>
       </footer>

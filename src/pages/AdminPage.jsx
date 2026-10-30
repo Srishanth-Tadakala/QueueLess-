@@ -5,16 +5,7 @@ import { getServiceQueue, calculateStageBWaitTime, calculateRollingAverage } fro
 
 /**
  * AdminPage: Administrator Counter Dashboard
- * Phase 4B & 5B: Live queue dispatch controls and Stage B rolling average duration analytics.
- *
- * Guarantees:
- * - State and persistence validation enforced through useQueue hook.
- * - Call Next unavailable while counter is occupied or waiting queue is empty.
- * - Complete and Skip available only for currently serving token.
- * - Re-queue available only for eligible SKIPPED tokens.
- * - Destructive resets require explicit confirmation.
- * - Non-interference: actions on one service do not mutate other services.
- * - Stage B rolling average derived purely from completed tokens with valid timestamps.
+ * Live queue dispatch controls and real-time duration analytics.
  */
 export default function AdminPage({
   queueState,
@@ -41,28 +32,28 @@ export default function AdminPage({
   const handleCallNext = (serviceId, serviceName) => {
     const res = onCallNext(serviceId);
     if (res?.success) {
-      showNotification(`Called customer ${res.token.tokenNumber} to ${serviceName} counter.`);
+      showNotification(`Called ticket ${res.token.tokenNumber} to ${serviceName} counter.`);
     }
   };
 
   const handleCompleteServing = (serviceId, tokenNumber) => {
     const res = onCompleteServing(serviceId);
     if (res?.success) {
-      showNotification(`Customer ${tokenNumber} marked COMPLETED.`);
+      showNotification(`Ticket ${tokenNumber} marked completed.`);
     }
   };
 
   const handleSkipServing = (serviceId, tokenNumber) => {
     const res = onSkipServing(serviceId);
     if (res?.success) {
-      showNotification(`Customer ${tokenNumber} marked SKIPPED (absent / no-show).`);
+      showNotification(`Ticket ${tokenNumber} marked skipped (absent).`);
     }
   };
 
   const handleRequeue = (tokenId, tokenNumber) => {
     const res = onRequeue(tokenId);
     if (res?.success) {
-      showNotification(`Customer ${tokenNumber} re-queued to the tail of the waiting line.`);
+      showNotification(`Ticket ${tokenNumber} re-queued to the tail of the line.`);
     }
   };
 
@@ -76,7 +67,7 @@ export default function AdminPage({
   const handleConfirmResetService = (serviceId, serviceName) => {
     const res = onResetService(serviceId);
     if (res?.success) {
-      showNotification(`Reset ${serviceName} queue and sequence counter back to 000.`);
+      showNotification(`Reset ${serviceName} queue and counter.`);
     }
     setResetServiceConfirmId(null);
   };
@@ -84,19 +75,19 @@ export default function AdminPage({
   const handleConfirmResetAll = () => {
     const res = onResetAll();
     if (res?.success) {
-      showNotification(`All service queues and counters have been reset to 000.`);
+      showNotification(`All service queues and counters have been reset.`);
     }
     setShowResetAllConfirm(false);
   };
 
   return (
     <div className="admin-page">
-      {/* Top Header & Master Reset Control */}
+      {/* Top Header & Reset Action */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '1rem', marginBottom: '2rem' }}>
         <div>
-          <h2>Administrator Counter Dashboard</h2>
+          <h2>Administrator Console</h2>
           <p style={{ fontSize: '0.925rem', color: 'var(--text-secondary)' }}>
-            Real-time queue depth, FIFO order dispatching, and Stage A baseline wait estimates.
+            Real-time queue depth, customer dispatching, and service controls.
           </p>
         </div>
 
@@ -105,7 +96,7 @@ export default function AdminPage({
           {showResetAllConfirm ? (
             <div style={{ background: 'rgba(239, 68, 68, 0.15)', border: '1px solid rgba(239, 68, 68, 0.4)', borderRadius: 'var(--radius-md)', padding: '0.65rem 1rem', display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
               <span style={{ fontSize: '0.825rem', color: '#fca5a5', fontWeight: '600' }}>
-                Reset ALL counters to 0?
+                Reset ALL service counters?
               </span>
               <button
                 type="button"
@@ -113,7 +104,7 @@ export default function AdminPage({
                 style={{ background: '#ef4444', color: '#ffffff', fontSize: '0.8rem', padding: '0.3rem 0.75rem' }}
                 onClick={handleConfirmResetAll}
               >
-                Confirm Full Reset
+                Confirm Reset
               </button>
               <button
                 type="button"
@@ -130,7 +121,7 @@ export default function AdminPage({
               className="btn btn-outline"
               style={{ fontSize: '0.825rem', color: 'var(--text-secondary)', borderColor: 'var(--border-subtle)' }}
               onClick={() => setShowResetAllConfirm(true)}
-              title="Reset all counters and clear all tokens across all services"
+              title="Reset all counters and clear waiting lines"
             >
               ⚙️ Reset All Queues
             </button>
@@ -157,7 +148,7 @@ export default function AdminPage({
             justifyContent: 'space-between'
           }}
         >
-          <span>{actionFeedback.isError ? '🛑' : '✓'} {actionFeedback.message}</span>
+          <span>{actionFeedback.isError ? '⚠️' : '✓'} {actionFeedback.message}</span>
           <button
             type="button"
             aria-label="Dismiss feedback"
@@ -176,7 +167,6 @@ export default function AdminPage({
           const totalIssued = queueState?.sequenceCounters?.[service.id] || 0;
           const isPaused = queueState?.serviceStatuses?.[service.id] === 'PAUSED';
 
-          // Identify skipped tokens for this service
           const skippedTokens = Array.isArray(queueState?.tokens)
             ? queueState.tokens.filter((t) => t.serviceId === service.id && t.status === 'SKIPPED')
             : [];
@@ -204,7 +194,7 @@ export default function AdminPage({
                 {service.name}
               </h3>
               <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '1.25rem' }}>
-                {service.counterNumber} • Baseline: {service.baselineDurationMinutes} min • Issued: <strong>{totalIssued}</strong>
+                {service.counterNumber} • Avg Time: ~{service.baselineDurationMinutes} min • Issued: <strong>{totalIssued}</strong>
               </p>
 
               {/* Now Serving Status & Counter Controls */}
@@ -222,7 +212,7 @@ export default function AdminPage({
                     Counter Status
                   </span>
                   <span className="mono" style={{ color: servingToken ? '#34d399' : 'var(--text-secondary)', fontWeight: '700', fontSize: '0.95rem' }}>
-                    {servingToken ? `SERVING ${servingToken.tokenNumber}` : 'VACANT'}
+                    {servingToken ? `SERVING ${servingToken.tokenNumber}` : 'READY / VACANT'}
                   </span>
                 </div>
 
@@ -238,7 +228,7 @@ export default function AdminPage({
                         </div>
                       )}
                       <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '0.2rem' }}>
-                        Called at: {new Date(servingToken.calledAt || Date.now()).toLocaleTimeString()}
+                        Called at: {new Date(servingToken.calledAt || Date.now()).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                       </div>
                     </div>
 
@@ -255,7 +245,7 @@ export default function AdminPage({
                           fontWeight: '600'
                         }}
                         onClick={() => handleCompleteServing(service.id, servingToken.tokenNumber)}
-                        title="Complete active customer and free the counter"
+                        title="Complete active ticket and free the counter"
                       >
                         ✓ Complete
                       </button>
@@ -269,16 +259,16 @@ export default function AdminPage({
                           padding: '0.55rem'
                         }}
                         onClick={() => handleSkipServing(service.id, servingToken.tokenNumber)}
-                        title="Mark customer as skipped / absentee and free counter"
+                        title="Mark customer absent and free counter"
                       >
-                        ↷ Skip (No-Show)
+                        ↷ Skip (Absent)
                       </button>
                     </div>
                   </div>
                 ) : (
                   <div>
                     <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginBottom: '0.75rem' }}>
-                      Counter is ready. {waitingTokens.length > 0 ? `${waitingTokens.length} customer(s) waiting in line.` : 'No customers waiting.'}
+                      {waitingTokens.length > 0 ? `${waitingTokens.length} customer(s) waiting in line.` : 'No customers currently waiting.'}
                     </p>
                     <button
                       type="button"
@@ -286,9 +276,9 @@ export default function AdminPage({
                       style={{ width: '100%', fontSize: '0.9rem', padding: '0.6rem' }}
                       disabled={waitingTokens.length === 0}
                       onClick={() => handleCallNext(service.id, service.name)}
-                      title={waitingTokens.length === 0 ? 'Queue is empty. No customers to call.' : `Call next waiting ticket: ${waitingTokens[0]?.tokenNumber}`}
+                      title={waitingTokens.length === 0 ? 'Queue is empty' : `Call next waiting ticket: ${waitingTokens[0]?.tokenNumber}`}
                     >
-                      ▶ Call Next Customer
+                      ▶ Call Next Ticket
                     </button>
                   </div>
                 )}
@@ -298,7 +288,7 @@ export default function AdminPage({
               <div style={{ marginBottom: '1.25rem', flex: 1 }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
                   <span style={{ fontSize: '0.75rem', textTransform: 'uppercase', color: 'var(--text-muted)' }}>
-                    Waiting Queue (FIFO Order)
+                    Waiting Queue
                   </span>
                   <span className="mono" style={{ fontSize: '0.8rem', color: 'var(--accent-cyan)', fontWeight: '700' }}>
                     {waitingTokens.length} in line
@@ -307,8 +297,8 @@ export default function AdminPage({
 
                 {waitingTokens.length === 0 ? (
                   <div style={{ background: 'rgba(255, 255, 255, 0.02)', border: '1px dashed var(--border-subtle)', borderRadius: 'var(--radius-sm)', padding: '1rem', textAlign: 'center' }}>
-                    <p style={{ fontSize: '0.825rem', color: 'var(--text-muted)', margin: 0, fontStyle: 'italic' }}>
-                      No tickets currently waiting in line.
+                    <p style={{ fontSize: '0.825rem', color: 'var(--text-muted)', margin: 0 }}>
+                      Queue is currently clear.
                     </p>
                   </div>
                 ) : (
@@ -351,7 +341,7 @@ export default function AdminPage({
                 <div style={{ marginBottom: '1.25rem', background: 'rgba(245, 158, 11, 0.04)', border: '1px solid rgba(245, 158, 11, 0.2)', borderRadius: 'var(--radius-sm)', padding: '0.75rem' }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
                     <span style={{ fontSize: '0.75rem', textTransform: 'uppercase', color: '#fbbf24', fontWeight: '600' }}>
-                      Skipped Customers ({skippedTokens.length})
+                      Skipped Tickets ({skippedTokens.length})
                     </span>
                   </div>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem', maxHeight: '120px', overflowY: 'auto' }}>
@@ -376,7 +366,7 @@ export default function AdminPage({
                           className="btn btn-secondary"
                           style={{ fontSize: '0.75rem', padding: '0.2rem 0.5rem' }}
                           onClick={() => handleRequeue(t.id, t.tokenNumber)}
-                          title="Re-queue ticket to tail of waiting line"
+                          title="Re-queue ticket to tail of line"
                         >
                           ↺ Re-queue
                         </button>
@@ -386,7 +376,7 @@ export default function AdminPage({
                 </div>
               )}
 
-              {/* Stage B Adaptive Estimation Analytics Panel */}
+              {/* Real-Time Duration Analytics Panel */}
               <div 
                 style={{ 
                   background: 'rgba(255, 255, 255, 0.02)', 
@@ -398,22 +388,22 @@ export default function AdminPage({
               >
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.45rem' }}>
                   <span style={{ fontSize: '0.725rem', textTransform: 'uppercase', color: 'var(--text-muted)', fontWeight: '700', letterSpacing: '0.05em' }}>
-                    Stage B Duration Analytics
+                    Pace Analytics
                   </span>
                   <Badge variant={analytics.isUsingFallback ? 'waiting' : 'serving'} style={{ fontSize: '0.7rem', padding: '0.15rem 0.45rem' }}>
-                    {analytics.isUsingFallback ? 'Baseline Fallback' : 'Adaptive Rolling Avg'}
+                    {analytics.isUsingFallback ? 'Standard Pace' : 'Live Adaptive Pace'}
                   </Badge>
                 </div>
 
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem', marginBottom: '0.5rem' }}>
                   <div>
-                    <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)', display: 'block' }}>Approved Baseline</span>
+                    <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)', display: 'block' }}>Base Duration</span>
                     <span className="mono" style={{ fontSize: '0.9rem', fontWeight: '700', color: 'var(--text-primary)' }}>
-                      {analytics.baselineMinutes} min
+                      ~{analytics.baselineMinutes} min
                     </span>
                   </div>
                   <div>
-                    <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)', display: 'block' }}>Rolling Average (M ≤ 5)</span>
+                    <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)', display: 'block' }}>Recent Average</span>
                     <span 
                       className="mono" 
                       style={{ 
@@ -422,28 +412,21 @@ export default function AdminPage({
                         color: analytics.rollingAverageMinutes !== null ? '#34d399' : 'var(--text-secondary)' 
                       }}
                     >
-                      {analytics.rollingAverageMinutes !== null ? `${analytics.rollingAverageMinutes} min` : 'None (No history)'}
+                      {analytics.rollingAverageMinutes !== null ? `~${analytics.rollingAverageMinutes} min` : 'Pending'}
                     </span>
                   </div>
                 </div>
 
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
                   <span>
-                    Valid Samples: <strong>{analytics.sampleCount}</strong> / {analytics.sampleWindow}
+                    Recent Samples: <strong>{analytics.sampleCount}</strong> / {analytics.sampleWindow}
                   </span>
-                  <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>
-                    Data: <strong style={{ color: analytics.sampleCount >= 5 ? '#34d399' : analytics.sampleCount > 0 ? '#fbbf24' : 'var(--text-muted)' }}>{analytics.dataSufficiency}</strong>
-                  </span>
-                </div>
-
-                {analytics.recentDurations.length > 0 && (
-                  <div style={{ marginTop: '0.45rem', paddingTop: '0.4rem', borderTop: '1px dashed var(--border-subtle)', fontSize: '0.725rem' }}>
-                    <span style={{ color: 'var(--text-muted)' }}>Recent completed (newest first): </span>
-                    <span className="mono" style={{ color: '#a5b4fc', fontWeight: '600' }}>
-                      {analytics.recentDurations.map((d) => `${d}m`).join(', ')}
+                  {analytics.recentDurations.length > 0 && (
+                    <span className="mono" style={{ fontSize: '0.725rem', color: '#a5b4fc' }}>
+                      ({analytics.recentDurations.map((d) => `${d}m`).join(', ')})
                     </span>
-                  </div>
-                )}
+                  )}
+                </div>
               </div>
 
               {/* Counter Management Controls (Pause & Reset) */}
@@ -451,7 +434,7 @@ export default function AdminPage({
                 {isConfirmingReset ? (
                   <div style={{ background: 'rgba(239, 68, 68, 0.12)', border: '1px solid rgba(239, 68, 68, 0.3)', borderRadius: 'var(--radius-sm)', padding: '0.65rem', textAlign: 'center' }}>
                     <p style={{ fontSize: '0.785rem', color: '#fca5a5', marginBottom: '0.5rem' }}>
-                      Reset {service.prefix} queue? (Clears tickets & resets to 000)
+                      Reset {service.prefix} queue & counter?
                     </p>
                     <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'center' }}>
                       <button
@@ -460,7 +443,7 @@ export default function AdminPage({
                         style={{ background: '#ef4444', color: '#ffffff', fontSize: '0.75rem', padding: '0.3rem 0.65rem' }}
                         onClick={() => handleConfirmResetService(service.id, service.name)}
                       >
-                        Confirm Reset
+                        Confirm
                       </button>
                       <button
                         type="button"
@@ -498,7 +481,7 @@ export default function AdminPage({
                         borderColor: 'var(--border-subtle)'
                       }}
                       onClick={() => setResetServiceConfirmId(service.id)}
-                      title={`Reset sequence counter and clear waiting line for ${service.name}`}
+                      title={`Reset counter for ${service.name}`}
                     >
                       ↺ Reset
                     </button>
@@ -508,14 +491,6 @@ export default function AdminPage({
             </div>
           );
         })}
-      </div>
-
-      {/* Architectural Guarantee Note */}
-      <div className="glass-card" style={{ background: 'rgba(99, 102, 241, 0.05)', borderColor: 'rgba(99, 102, 241, 0.2)' }}>
-        <h4 style={{ color: '#a5b4fc', marginBottom: '0.5rem' }}>Phase 4B Dispatch Governance & Invariants</h4>
-        <p style={{ fontSize: '0.875rem', color: 'var(--text-secondary)', lineHeight: '1.5' }}>
-          All counter transitions are executed through pure lifecycle validators with immutable state progression. Calling Next enforces FIFO order and single-serving-token counter invariants. Completing or skipping records ISO epoch timestamps with mutual exclusivity, and re-queuing appends tickets strictly to the queue tail to protect fairness.
-        </p>
       </div>
     </div>
   );
