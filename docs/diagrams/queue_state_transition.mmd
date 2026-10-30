@@ -1,0 +1,15 @@
+stateDiagram-v2
+    [*] --> WAITING: Customer generates token\n(createdAt = Date.now())
+
+    WAITING --> SERVING: Staff clicks 'Call Next'\n[Guard: Counter Vacant]\n(calledAt = Date.now())
+    WAITING --> CANCELLED: Customer clicks 'Cancel Ticket'\n(cancelledAt = Date.now(), completedAt = null)
+
+    SERVING --> COMPLETED: Staff clicks 'Mark Complete'\n(completedAt = Date.now(), skippedAt = null)
+    SERVING --> SKIPPED: Staff clicks 'Skip / No-Show'\n(skippedAt = Date.now(), completedAt = null)
+
+    SKIPPED --> WAITING: Staff clicks 'Re-queue'\n(createdAt = Date.now(), requeueCount++, reset calledAt/completedAt/skippedAt)
+
+    COMPLETED --> [*]: Terminal state\n(Eligible for Stage B rolling average analytics)
+    CANCELLED --> [*]: Terminal state\n(Excluded from analytics, session cleared)
+    SKIPPED --> [*]: Non-serving terminal unless re-queued\n(Strictly excluded from Stage B analytics)
+

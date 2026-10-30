@@ -1,0 +1,23 @@
+flowchart LR
+    Customer((Student / Visitor))
+
+    subgraph QueueLessSystem ["QueueLess Customer Interface"]
+        UC1["Browse Service Desks & Live Counts"]
+        UC2["Select Academic Counter"]
+        UC3["Request Sequential Virtual Token"]
+        UC4["View Position (#P in line)"]
+        UC5["View Estimated Wait Time (Stage A / B)"]
+        UC6["Receive 'Now Serving' Counter Alert"]
+        UC7["Cancel Active Token"]
+        UC8["Dismiss Session upon Completion"]
+    end
+
+    Customer --> UC1
+    Customer --> UC2
+    Customer --> UC3
+    Customer --> UC4
+    Customer --> UC5
+    Customer --> UC6
+    Customer --> UC7
+    Customer --> UC8
+

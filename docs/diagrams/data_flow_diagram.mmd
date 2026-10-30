@@ -1,0 +1,58 @@
+flowchart TD
+    subgraph ExternalEntities ["External Users"]
+        CustomerUser["Student / Visitor"]
+        AdminUser["Desk Staff / Operator"]
+    end
+
+    subgraph Process1 ["Process 1.0: Token Issuance & Active Session"]
+        P1_Validate["Validate Service & Session"]
+        P1_Format["Generate Token & Next Sequence"]
+    end
+
+    subgraph Process2 ["Process 2.0: Counter Dispatch & Lifecycle FSM"]
+        P2_Guard["Guard Preconditions (Desk Vacancy)"]
+        P2_Transition["Apply Status Transition & Timestamps"]
+    end
+
+    subgraph Process3 ["Process 3.0: Estimation & Analytics Engine"]
+        P3_FIFO["Sort Waiting Tokens (FIFO)"]
+        P3_StageA["Compute Stage A Baseline Wait"]
+        P3_StageB["Compute Stage B Rolling Average"]
+    end
+
+    subgraph Process4 ["Process 4.0: Storage & Cross-Tab Synchronization"]
+        P4_Validate["Validate Schema & Persist"]
+        P4_Broadcast["Broadcast Event (Non-PII Metadata)"]
+        P4_Reload["Reload Canonical State on Notification"]
+    end
+
+    subgraph DataStores ["Data Stores"]
+        DS_QueueState[("D1: LocalStorage ('queueless_state_v1')")]
+        DS_SessionToken[("D2: LocalStorage ('queueless_active_token_id_v1')")]
+        DS_SyncBus[("D3: BroadcastChannel ('queueless_queue_sync_v1')")]
+    end
+
+    CustomerUser -->|Selects desk, enters name| P1_Validate
+    P1_Validate -->|If valid| P1_Format
+    P1_Format -->|Writes updated state| P4_Validate
+    P1_Format -->|Records active token ID| DS_SessionToken
+    P4_Validate -->|Saves serialized state| DS_QueueState
+    P4_Validate -->|On successful commit| P4_Broadcast
+    P4_Broadcast -->|Dispatches event| DS_SyncBus
+
+    AdminUser -->|Call Next / Complete / Skip / Pause| P2_Guard
+    P2_Guard -->|If valid| P2_Transition
+    P2_Transition -->|Writes updated state| P4_Validate
+
+    DS_SyncBus -->|Delivers message| P4_Reload
+    P4_Reload -->|Reads canonical state| DS_QueueState
+    P4_Reload -->|Updates in-memory state| Process3
+
+    DS_QueueState -->|Loads active queue| Process3
+    Process3 --> P3_FIFO
+    P3_FIFO --> P3_StageA
+    P3_FIFO --> P3_StageB
+    P3_StageA -->|Displays wait & position| CustomerUser
+    P3_StageB -->|Displays adaptive metrics| CustomerUser
+    P3_StageB -->|Displays duration analytics| AdminUser
+

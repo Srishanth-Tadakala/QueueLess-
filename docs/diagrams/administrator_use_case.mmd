@@ -1,0 +1,27 @@
+flowchart LR
+    Admin((Desk Staff / Operator))
+
+    subgraph QueueLessAdmin ["QueueLess Administrator Interface"]
+        UC1["Monitor Live Service Desk Status"]
+        UC2["Inspect FIFO Waiting Line"]
+        UC3["Call Next Customer"]
+        UC4["Mark Active Customer Completed"]
+        UC5["Skip Absentee Customer (No-Show)"]
+        UC6["Re-queue Skipped Customer to Tail"]
+        UC7["Pause / Resume Desk Intake"]
+        UC8["Inspect Stage B Duration Analytics"]
+        UC9["Reset Service Counter"]
+        UC10["Execute Master Reset All"]
+    end
+
+    Admin --> UC1
+    Admin --> UC2
+    Admin --> UC3
+    Admin --> UC4
+    Admin --> UC5
+    Admin --> UC6
+    Admin --> UC7
+    Admin --> UC8
+    Admin --> UC9
+    Admin --> UC10
+

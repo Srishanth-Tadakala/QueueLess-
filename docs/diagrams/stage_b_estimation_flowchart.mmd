@@ -1,0 +1,23 @@
+flowchart TD
+    Start([Calculate Stage B Adaptive Wait Time]) --> FilterCompleted[Filter tokens where:\n1. status == 'COMPLETED'\n2. token.serviceId == targetService\n3. calledAt > 0 and completedAt > 0\n4. completedAt > calledAt]
+    
+    FilterCompleted --> CalcDurations[For each valid token:\nrawDuration = completedAt - calledAt / 60000\nclampedDuration = min 20.0, max 1.0, rawDuration]
+    CalcDurations --> SortNewest[Sort valid transactions by completedAt descending\nNewest first]
+    SortNewest --> WindowSamples[Select window of newest M <= 5 samples]
+
+    WindowSamples --> CheckCount{Sample Count M == 0?}
+
+    CheckCount -- Yes: Fallback Branch --> UseFallback[isUsingFallback = true\nEffectiveDuration = T_baseline\nrollingAverageMinutes = null\ndataSufficiency = 'NO_HISTORY'\nestimationMethod = 'STAGE_A_BASELINE']
+    
+    CheckCount -- No: Adaptive Branch --> ComputeMean[sum = sum of clamped durations\nmean = sum / M\nrollingAverageMinutes = round mean * 100 / 100\nEffectiveDuration = rollingAverageMinutes\nisUsingFallback = false\nestimationMethod = 'STAGE_B_ROLLING_AVERAGE']
+    ComputeMean --> SufficiencyCheck{M >= 5 ?}
+    SufficiencyCheck -- Yes --> SuffYes[dataSufficiency = 'SUFFICIENT_HISTORY']
+    SufficiencyCheck -- No --> SuffNo[dataSufficiency = 'INSUFFICIENT_HISTORY']
+
+    UseFallback --> ApplyTwoBranch[Apply Two-Branch Waiting Formula using EffectiveDuration:\nBranch 1 Occupied: RemainingCurrentService + N_ahead * EffectiveDuration\nBranch 2 Vacant: N_ahead * EffectiveDuration]
+    SuffYes --> ApplyTwoBranch
+    SuffNo --> ApplyTwoBranch
+
+    ApplyTwoBranch --> ComposeDisclosure[Generate disclosure wording:\nIf fallback: Standard baseline duration used. Historical data not available.\nIf adaptive: Based on recent completed transactions M samples. Statistical mean.]
+    ComposeDisclosure --> OutputObj([Return Stage B wait metrics & analytics])
+

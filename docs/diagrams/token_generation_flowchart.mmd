@@ -1,0 +1,31 @@
+flowchart TD
+    Start([User clicks 'Select Service']) --> CheckSession{User holds active token\nin WAITING or SERVING?}
+    
+    CheckSession -- Yes --> ShowHeldBanner[Display 'Active Ticket Held' Banner\nBlock new issuance\nPrompt to view tracker]
+    ShowHeldBanner --> End([Halt])
+
+    CheckSession -- No --> OpenModal[Open Request Token Modal Dialog\nRender expected sequence number & baseline wait]
+    OpenModal --> InputData[User inputs optional name / student ID\n(Client-side capped at 80 chars)]
+    InputData --> Submit[User clicks 'Confirm & Get Token']
+
+    Submit --> ValidateCatalog{Service in approved\ncatalog?}
+    ValidateCatalog -- No --> ReturnCatalogError[Return INVALID_SERVICE error]
+    ReturnCatalogError --> End
+
+    ValidateCatalog -- Yes --> CheckPaused{Is target service\nPAUSED?}
+    CheckPaused -- Yes --> ReturnPausedError[Return SERVICE_PAUSED error\n'Desk is currently paused']
+    ReturnPausedError --> End
+
+    CheckPaused -- No --> IncrementCounter[Fetch current service sequence counter\nnextSequence = counter + 1]
+    IncrementCounter --> FormatToken[Format Token Number: PREFIX-NNN\ne.g., ADM-001\nSanitize name: trim and slice to 80 chars]
+    FormatToken --> CreateTokenObj[Construct Token Object with status: WAITING\ncreatedAt: timestamp\nIncrement state.version]
+    CreateTokenObj --> PersistState{Attempt save to\nlocalStorage\n'queueless_state_v1'}
+
+    PersistState -- Fails --> Rollback[Return PERSISTENCE_FAILED\nReturn untouched state\nNo token issued]
+    Rollback --> End
+
+    PersistState -- Success --> StoreSession[Store token ID in\n'queueless_active_token_id_v1']
+    StoreSession --> Broadcast[Broadcast TOKEN_ISSUED event\nvia BroadcastChannel]
+    Broadcast --> NavTracker[Navigate customer view to #/tracker]
+    NavTracker --> SuccessEnd([Token active in Tracker])
+

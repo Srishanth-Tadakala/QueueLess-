@@ -1,0 +1,105 @@
+classDiagram
+    class App {
+        +activeView: string
+        +setActiveView(view)
+        +handleIssueTokenSuccess(token)
+    }
+
+    class Navbar {
+        +activeView: string
+        +onViewChange(view)
+    }
+
+    class HomePage {
+        +queueState: object
+        +activeToken: object
+        +onIssueToken(serviceId, name)
+        +onNavigateTracker()
+    }
+
+    class TrackerPage {
+        +activeToken: object
+        +trackedToken: object
+        +activeMetrics: object
+        +onCancelToken(id)
+        +onDismissSession()
+        +onNavigateHome()
+    }
+
+    class AdminPage {
+        +queueState: object
+        +serviceAnalytics: object
+        +onCallNext(serviceId)
+        +onCompleteServing(serviceId)
+        +onSkipServing(serviceId)
+        +onRequeue(tokenId)
+        +onTogglePause(serviceId)
+        +onResetService(serviceId)
+        +onResetAll()
+    }
+
+    class useQueue {
+        +queueState: object
+        +sessionTokenId: string
+        +activeToken: object
+        +trackedToken: object
+        +activeMetrics: object
+        +serviceAnalytics: object
+        +issueToken(serviceId, name)
+        +cancelToken(tokenId)
+        +callNext(serviceId)
+        +completeServing(serviceId)
+        +skipServing(serviceId)
+        +requeue(tokenId)
+        +togglePause(serviceId)
+        +resetService(serviceId)
+        +resetAll()
+    }
+
+    class QueueModel {
+        +createInitialState()
+        +validateQueueState(state)
+        +createToken(state, serviceId, name)
+        +canTransition(token, targetStatus, ctx)
+        +applyTransition(state, id, targetStatus)
+    }
+
+    class EstimationEngine {
+        +calculateQueuePosition(tokenOrId, state)
+        +calculateStageAWaitTime(tokenOrId, state)
+        +calculateStageBWaitTime(tokenOrId, state)
+        +getQueueMetrics(tokenOrId, state)
+    }
+
+    class DurationAnalytics {
+        +isEligibleCompletedToken(token)
+        +extractTokenDurationMinutes(token)
+        +getValidCompletedTransactions(serviceId, tokens)
+        +calculateRollingAverage(serviceId, tokens)
+        +getAllServicesAnalytics(tokens)
+    }
+
+    class StorageAdapter {
+        +loadQueueState(storage)
+        +saveQueueState(state, storage)
+        +resetQueueStorage(storage)
+    }
+
+    class QueueSync {
+        +createSyncChannel(name)
+        +broadcastSyncEvent(params)
+        +subscribeCrossTabSync(options)
+    }
+
+    App --> Navbar
+    App --> HomePage
+    App --> TrackerPage
+    App --> AdminPage
+    App --> useQueue
+
+    useQueue --> QueueModel
+    useQueue --> EstimationEngine
+    useQueue --> DurationAnalytics
+    useQueue --> StorageAdapter
+    useQueue --> QueueSync
+

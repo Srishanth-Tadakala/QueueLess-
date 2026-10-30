@@ -1,0 +1,27 @@
+sequenceDiagram
+    autonumber
+    actor Staff as Desk Staff
+    participant TabAdmin as Tab B (AdminPage)
+    participant Storage as browser localStorage ('queueless_state_v1')
+    participant Channel as BroadcastChannel ('queueless_queue_sync_v1')
+    participant TabCust as Tab A (TrackerPage)
+    actor Student as Student
+
+    Staff->>TabAdmin: Clicks 'Call Next Customer'
+    TabAdmin->>TabAdmin: Validates preconditions (Desk Vacant, Queue not empty)
+    TabAdmin->>TabAdmin: Applies transition WAITING -> SERVING (calledAt = Date.now())
+    TabAdmin->>TabAdmin: Advances state.version (e.g. v14 -> v15)
+    TabAdmin->>Storage: saveQueueState(newState)
+    Storage-->>TabAdmin: Write success: true
+
+    TabAdmin->>Channel: postMessage({ type: 'TOKEN_CALLED', version: 15, originId: 'tab_admin_123' })
+    TabAdmin->>Staff: Updates UI (Displays SERVING ADM-001)
+
+    Channel-->>TabCust: onmessage event received
+    TabCust->>TabCust: Checks originId: 'tab_admin_123' != 'tab_cust_456' (No self-echo)
+    TabCust->>Storage: loadQueueState()
+    Storage-->>TabCust: Returns canonical persisted state (v15)
+    TabCust->>TabCust: Compares version: 15 > 14 (State is strictly newer)
+    TabCust->>TabCust: setQueueState(newState) triggers re-render
+    TabCust->>Student: Displays vibrant green 'Now Serving' alert!
+

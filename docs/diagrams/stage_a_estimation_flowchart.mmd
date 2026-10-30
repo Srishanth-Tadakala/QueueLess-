@@ -1,0 +1,31 @@
+flowchart TD
+    Start([Calculate Stage A Wait Time]) --> CheckToken{Is target token in\nWAITING status?}
+    
+    CheckToken -- No: SERVING --> ServingWait[Estimated Wait = 0 min\nDisplay = 'At Counter'\nStatus = 'Now Serving — Please proceed']
+    CheckToken -- No: Terminal --> TerminalWait[Estimated Wait = null\nDisplay = 'N/A'\nStatus = Terminal state text]
+    ServingWait --> Done([End])
+    TerminalWait --> Done
+
+    CheckToken -- Yes: WAITING --> FetchBaseline[Fetch T_baseline from approved service:\nADM = 5m, FIN = 3m, EXM = 6m]
+    FetchBaseline --> CountAhead[Calculate N_ahead = count of WAITING tokens\nfor same service with earlier createdAt]
+    CountAhead --> CheckCounter{Is a customer currently\nSERVING at the desk?}
+
+    CheckCounter -- Yes: Branch 1 --> CalcElapsed[elapsedMinutes = max 0, currentTime - calledAt / 60000]
+    CalcElapsed --> CalcRemaining[RemainingCurrentService = max 0, T_baseline - elapsedMinutes]
+    CalcRemaining --> Branch1Wait[rawWait = RemainingCurrentService + N_ahead * T_baseline]
+    Branch1Wait --> RoundEst[estimatedMinutes = round rawWait]
+
+    CheckCounter -- No: Branch 2 --> VacantWait[RemainingCurrentService = 0\nrawWait = N_ahead * T_baseline]
+    VacantWait --> RoundEst
+
+    RoundEst --> CheckZero{Counter vacant AND\nN_ahead == 0?}
+    CheckZero -- Yes --> ZeroText[isReadyNow = true\nDisplay = '0 min Ready now'\nStatus = 'You are next in line — Counter is ready to call you']
+    CheckZero -- No --> CheckNext{Counter occupied AND\nN_ahead == 0?}
+    CheckNext -- Yes --> NextText[Display = estimatedMinutes <= 0 ? '< 1 min Until call' : '~X min Until call'\nStatus = 'You are next in line — Please remain near counter']
+    CheckNext -- No --> GeneralText[Display = '~Y min estimated'\nStatus = 'Position #P — N tokens ahead of you']
+
+    ZeroText --> OutputObj[Return structured metrics object]
+    NextText --> OutputObj
+    GeneralText --> OutputObj
+    OutputObj --> Done
+

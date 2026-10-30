@@ -1,0 +1,43 @@
+graph TD
+    subgraph ClientBrowser ["Browser Environment (Single Origin)"]
+        subgraph PresentationLayer ["Presentation Layer (React 18 SPA)"]
+            CustomerView["Customer View\n(HomePage.jsx & TrackerPage.jsx)"]
+            AdminView["Administrator View\n(AdminPage.jsx)"]
+        end
+
+        subgraph HookLayer ["Reactive State & Coordination Layer"]
+            UseQueue["useQueue Hook\n(React State, Refs, Ambient 15s Timer)"]
+        end
+
+        subgraph DomainAndAnalytics ["Functional Domain & Analytics Engine"]
+            QueueModel["Queue Model & FSM\n(queueModel.js)"]
+            IssuanceModule["Token Issuance\n(tokenIssuance.js)"]
+            DispatchModule["Admin Dispatcher\n(adminDispatch.js)"]
+            EstimationEngine["Wait-Time Estimation Engine\n(estimationEngine.js & durationAnalytics.js)"]
+        end
+
+        subgraph PersistenceAndSync ["Storage & Synchronization Layer"]
+            StorageAdapter["LocalStorage Adapter\n(storage.js)"]
+            SyncModule["Cross-Tab Sync Engine\n(queueSync.js)"]
+            LocalStorage[("Browser localStorage\n('queueless_state_v1')")]
+            BroadcastChannelBus[("BroadcastChannel API\n('queueless_queue_sync_v1')")]
+        end
+    end
+
+    CustomerView -->|User Actions & Queries| UseQueue
+    AdminView -->|Dispatcher Commands| UseQueue
+
+    UseQueue -->|Invokes Validation| QueueModel
+    UseQueue -->|Token Requests| IssuanceModule
+    UseQueue -->|Desk Operations| DispatchModule
+    UseQueue -->|Computes Position & Estimates| EstimationEngine
+
+    IssuanceModule -->|Saves State| StorageAdapter
+    DispatchModule -->|Saves State| StorageAdapter
+    QueueModel -->|State Factory| StorageAdapter
+
+    StorageAdapter <-->|Read / Write Serialized State| LocalStorage
+    StorageAdapter -.->|On Successful Write| SyncModule
+    SyncModule <-->|Post / Receive Event Messages| BroadcastChannelBus
+    SyncModule -.->|Wake-up Event Trigger| UseQueue
+
